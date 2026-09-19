@@ -14,16 +14,20 @@ try:
             if "linux_amd64.tar.gz" in asset["name"]:
                 print(asset["browser_download_url"])
                 break
-except:
+except Exception as e:
     pass
 ')
 
 if [ -n "$ZROK_URL" ]; then
     wget -q "$ZROK_URL" -O zrok_linux_amd64.tar.gz
-    tar -xzf zrok_linux_amd64.tar.gz || true
-    chmod +x zrok || true
-    mv zrok /usr/local/bin/zrok || true
-    echo "✅ تم تثبيت zrok بنجاح!"
+    tar -xzf zrok_linux_amd64.tar.gz
+    if [ -f "zrok" ]; then
+        chmod +x zrok
+        mv zrok /usr/local/bin/zrok
+        echo "✅ تم تثبيت zrok بنجاح في المسار العام!"
+    else
+        echo "⚠️ تحذير: ملف zrok غير موجود بعد فك الضغط."
+    fi
 else
     echo "⚠️ فشل جلب رابط zrok تلقائياً."
 fi
@@ -66,7 +70,7 @@ if webhook_url:
         urllib.request.urlopen(req)
         print("✅ تم إرسال إشعار التشغيل إلى ديسكورد بنجاح!")
     except Exception as e:
-        print(f"⚠️ فشل إرسال الويب هوك (تأكد من صحة رابط Webhook في Railway): {e}")
+        print(f"⚠️ فشل إرسال الويب هوك: {e}")
 EOF
 
 # إبقاء الحاوية تعمل
