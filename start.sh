@@ -20,13 +20,16 @@ except Exception as e:
 
 if [ -n "$ZROK_URL" ]; then
     wget -q "$ZROK_URL" -O zrok_linux_amd64.tar.gz
-    tar -xzf zrok_linux_amd64.tar.gz
-    if [ -f "zrok" ]; then
-        chmod +x zrok
-        mv zrok /usr/local/bin/zrok
-        echo "✅ تم تثبيت zrok بنجاح في المسار العام!"
+    tar -xzf zrok_linux_amd64.tar.gz || true
+    
+    # البحث الذكي عن ملف zrok أينما تم فك ضغطه ونقله للمسار العام
+    ZROK_BIN=$(find . -name "zrok" -type f 2>/dev/null | head -n 1)
+    if [ -n "$ZROK_BIN" ]; then
+        chmod +x "$ZROK_BIN"
+        mv "$ZROK_BIN" /usr/local/bin/zrok
+        echo "✅ تم العثور على وتثبيت zrok بنجاح في المسار العام!"
     else
-        echo "⚠️ تحذير: ملف zrok غير موجود بعد فك الضغط."
+        echo "⚠️ تحذير: لم يتم العثور على ملف zrok بعد فك الضغط."
     fi
 else
     echo "⚠️ فشل جلب رابط zrok تلقائياً."
