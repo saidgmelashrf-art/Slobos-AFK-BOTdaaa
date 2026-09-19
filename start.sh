@@ -5,6 +5,7 @@ echo "⬇️ تحميل أحدث إصدار من Geyser-Standalone..."
 wget -q https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/standalone -O /app/Geyser-Standalone.jar
 
 echo "⬇️ تحميل playit agent..."
+# الرابط الجديد والمصحح (تأكد من نسخه بالكامل)
 curl -fsSL https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-x86_64-unknown-linux-musl -o /usr/local/bin/playit
 chmod +x /usr/local/bin/playit
 
