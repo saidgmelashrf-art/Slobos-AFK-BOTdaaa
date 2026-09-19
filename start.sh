@@ -1,19 +1,38 @@
 #!/bin/bash
 
 echo "⬇️ تحميل أحدث إصدار من Geyser-Standalone..."
-wget -q https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/standalone -O /app/Geyser-Standalone.jar || echo "فشل التحميل، سيتم تخطيه..."
+wget -q https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/standalone -O /app/Geyser-Standalone.jar || echo "فشل تحميل Geyser..."
 
-echo "⬇️ تحميل وتثبيت أداة zrok..."
-wget -q https://github.com/openziti/zrok/releases/latest/download/zrok_linux_amd64.tar.gz || echo "فشل تحميل zrok..."
-tar -xzf zrok_linux_amd64.tar.gz || true
-chmod +x zrok || true
-mv zrok /usr/local/bin/zrok || true
+echo "⬇️ جلب وتثبيت أحدث نسخة من أداة zrok تلقائياً..."
+ZROK_URL=$(python3 -c '
+import urllib.request, json
+try:
+    req = urllib.request.Request("https://api.github.com/repos/openziti/zrok/releases/latest", headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req) as response:
+        data = json.loads(response.read().decode())
+        for asset in data.get("assets", []):
+            if "linux_amd64.tar.gz" in asset["name"]:
+                print(asset["browser_download_url"])
+                break
+except:
+    pass
+')
+
+if [ -n "$ZROK_URL" ]; then
+    wget -q "$ZROK_URL" -O zrok_linux_amd64.tar.gz
+    tar -xzf zrok_linux_amd64.tar.gz || true
+    chmod +x zrok || true
+    mv zrok /usr/local/bin/zrok || true
+    echo "✅ تم تثبيت zrok بنجاح!"
+else
+    echo "⚠️ فشل جلب رابط zrok تلقائياً."
+fi
 
 if [ -z "$ZROK_TOKEN" ]; then
-    echo "❌ تنبيه خطير: متغير ZROK_TOKEN غير موجود في Railway Variables! يرجى إضافته."
+    echo "❌ تنبيه: متغير ZROK_TOKEN غير موجود في Railway Variables!"
 else
     echo "🔑 تفعيل حساب zrok..."
-    zrok enable $ZROK_TOKEN || echo "التفعيل فشل أو الحساب مفعل مسبقاً، سنتابع..."
+    zrok enable $ZROK_TOKEN || echo "التفعيل مفعل مسبقاً أو تمت المتابعة..."
 fi
 
 echo "🌐 تشغيل منفذ وهمي لاجتياز فحص Railway..."
@@ -25,7 +44,7 @@ java -Xms512M -Xmx512M -jar /app/Geyser-Standalone.jar &
 echo "🚀 تشغيل zrok لفتح النفق على بورت Geyser..."
 zrok share public 127.0.0.1:19132 --backend-mode tcp &
 
-# سكربت إرسال إشعار إلى ديسكورد
+# سكربت إرسال إشعار إلى ديسكورد بعد التأكد من الرابط
 python3 - << 'EOF'
 import time
 import os
@@ -34,7 +53,7 @@ import json
 
 webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
 if webhook_url:
-    time.sleep(5)
+    time.sleep(6)
     payload = {
         "content": "🚀 **تم تشغيل سيرفر الماينكرافت عبر zrok بنجاح!**\n🎮 الرابط جاهز لدخول أصحاب الـ Bedrock بدون أي كراش!"
     }
@@ -47,7 +66,7 @@ if webhook_url:
         urllib.request.urlopen(req)
         print("✅ تم إرسال إشعار التشغيل إلى ديسكورد بنجاح!")
     except Exception as e:
-        print(f"⚠️ فشل إرسال الويب هوك: {e}")
+        print(f"⚠️ فشل إرسال الويب هوك (تأكد من صحة رابط Webhook في Railway): {e}")
 EOF
 
 # إبقاء الحاوية تعمل
