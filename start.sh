@@ -7,6 +7,9 @@ echo "⬇️ تحميل وتثبيت أداة Playit.gg..."
 wget -q https://github.com/playit-cloud/playit-agent/releases/download/v0.15.26/playit-linux-amd64 -O /usr/local/bin/playit
 chmod +x /usr/local/bin/playit
 
+echo "⚙️ إعداد ملف التكوين الثابت لـ Playit.gg..."
+echo 'secret_key = "3d9225ab7a28b37dc0f68fd676560f15"' > playit.toml
+
 echo "🌐 تشغيل منفذ وهمي لاجتياز فحص Railway..."
 python3 -m http.server ${PORT:-8080} &
 
@@ -27,7 +30,7 @@ webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
 if webhook_url:
     time.sleep(6)
     payload = {
-        "content": "🚀 **تم تشغيل سيرفر الماينكرافت عبر Playit.gg بنجاح!**\n🎮 تحقق من سجلات Railway (Logs) للحصول على رابط ربط الحساب (Claim Link)."
+        "content": "🚀 **تم تشغيل سيرفر الماينكرافت عبر Playit.gg بنجاح!**\n🔗 النفق متصل تلقائياً بالعنوان الثابت بدون الحاجة لروابط كليم جديدة."
     }
     try:
         req = urllib.request.Request(
