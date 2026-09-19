@@ -3,6 +3,6 @@ bedrock:
   port: 19132
 
 remote:
-  address: "oribi.aternos.host"
+  address: "Progamer-Smp.aternos.me"
   port: 29801
   auth-type: offline
