@@ -3,36 +3,43 @@
 echo "⬇️ تحميل أحدث إصدار من Geyser-Standalone..."
 wget -q https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/standalone -O /app/Geyser-Standalone.jar || echo "فشل تحميل Geyser..."
 
-echo "⬇️ جلب وتثبيت أحدث نسخة من أداة zrok تلقائياً..."
-ZROK_URL=$(python3 -c '
+echo "⬇️ تحميل وتثبيت أداة zrok..."
+python3 -c '
 import urllib.request, json
 try:
     req = urllib.request.Request("https://api.github.com/repos/openziti/zrok/releases/latest", headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req) as response:
-        data = json.loads(response.read().decode())
+    with urllib.request.urlopen(req) as resp:
+        data = json.loads(resp.read().decode())
+        url = ""
         for asset in data.get("assets", []):
             if "linux_amd64.tar.gz" in asset["name"]:
-                print(asset["browser_download_url"])
+                url = asset["browser_download_url"]
                 break
+        if url:
+            urllib.request.urlretrieve(url, "zrok_pkg.tar.gz")
 except Exception as e:
-    pass
-')
+    print(f"Error: {e}")
+'
 
-if [ -n "$ZROK_URL" ]; then
-    wget -q "$ZROK_URL" -O zrok_linux_amd64.tar.gz
-    tar -xzf zrok_linux_amd64.tar.gz || true
-    
-    # البحث الذكي عن ملف zrok أينما تم فك ضغطه ونقله للمسار العام
-    ZROK_BIN=$(find . -name "zrok" -type f 2>/dev/null | head -n 1)
-    if [ -n "$ZROK_BIN" ]; then
-        chmod +x "$ZROK_BIN"
-        mv "$ZROK_BIN" /usr/local/bin/zrok
-        echo "✅ تم العثور على وتثبيت zrok بنجاح في المسار العام!"
-    else
-        echo "⚠️ تحذير: لم يتم العثور على ملف zrok بعد فك الضغط."
-    fi
+if [ -f "zrok_pkg.tar.gz" ]; then
+    tar -xzf zrok_pkg.tar.gz || true
+fi
+
+# البحث وتثبيت ملف zrok في المسار العام
+ZROK_BIN=$(find . -name "zrok" -type f 2>/dev/null | head -n 1)
+if [ -n "$ZROK_BIN" ]; then
+    chmod +x "$ZROK_BIN"
+    mv "$ZROK_BIN" /usr/local/bin/zrok
+    echo "✅ تم تثبيت zrok بنجاح في المسار العام!"
 else
-    echo "⚠️ فشل جلب رابط zrok تلقائياً."
+    echo "⚠️ محاولة التثبيت بالطريقة البديلة..."
+    wget -q https://github.com/openziti/zrok/releases/download/v0.4.38/zrok_0.4.38_linux_amd64.tar.gz -O zrok.tar.gz || true
+    tar -xzf zrok.tar.gz || true
+    if [ -f "zrok" ]; then
+        chmod +x zrok
+        mv zrok /usr/local/bin/zrok
+        echo "✅ تم تثبيت zrok بنجاح بالطريقة البديلة!"
+    fi
 fi
 
 if [ -z "$ZROK_TOKEN" ]; then
@@ -51,7 +58,7 @@ java -Xms512M -Xmx512M -jar /app/Geyser-Standalone.jar &
 echo "🚀 تشغيل zrok لفتح النفق على بورت Geyser..."
 zrok share public 127.0.0.1:19132 --backend-mode tcp &
 
-# سكربت إرسال إشعار إلى ديسكورد بعد التأكد من الرابط
+# سكربت إرسال إشعار إلى ديسكورد
 python3 - << 'EOF'
 import time
 import os
@@ -76,5 +83,4 @@ if webhook_url:
         print(f"⚠️ فشل إرسال الويب هوك: {e}")
 EOF
 
-# إبقاء الحاوية تعمل
 wait
