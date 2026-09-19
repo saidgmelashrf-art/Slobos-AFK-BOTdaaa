@@ -16,5 +16,6 @@ python3 -m http.server ${PORT:-8080} &
 echo "🚀 تشغيل Geyser في الخلفية..."
 java -Xms512M -Xmx512M -jar /app/Geyser-Standalone.jar &
 
-echo "🚀 تشغيل bore وتوليد IP وبورت خارجي..."
-bore local 19132 --to bore.pub --port 19132
+echo "🚀 تشغيل bore ببورت عشوائي متاح..."
+# شلنا تحديد البورت عشان يختار بورت فاضي لوحده وتتجنب خطأ الاستخدام
+bore local 19132 --to bore.pub
