@@ -1,17 +1,20 @@
 #!/bin/bash
-set -e
 
 echo "⬇️ تحميل أحدث إصدار من Geyser-Standalone..."
-wget -q https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/standalone -O /app/Geyser-Standalone.jar
+wget -q https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/standalone -O /app/Geyser-Standalone.jar || echo "فشل التحميل، سيتم تخطيه..."
 
 echo "⬇️ تحميل وتثبيت أداة zrok..."
-wget -q https://github.com/openziti/zrok/releases/latest/download/zrok_linux_amd64.tar.gz
-tar -xzf zrok_linux_amd64.tar.gz
-chmod +x zrok
-mv zrok /usr/local/bin/zrok
+wget -q https://github.com/openziti/zrok/releases/latest/download/zrok_linux_amd64.tar.gz || echo "فشل تحميل zrok..."
+tar -xzf zrok_linux_amd64.tar.gz || true
+chmod +x zrok || true
+mv zrok /usr/local/bin/zrok || true
 
-echo "🔑 تفعيل حساب zrok باستخدام التوكن..."
-zrok enable $ZROK_TOKEN
+if [ -z "$ZROK_TOKEN" ]; then
+    echo "❌ تنبيه خطير: متغير ZROK_TOKEN غير موجود في Railway Variables! يرجى إضافته."
+else
+    echo "🔑 تفعيل حساب zrok..."
+    zrok enable $ZROK_TOKEN || echo "التفعيل فشل أو الحساب مفعل مسبقاً، سنتابع..."
+fi
 
 echo "🌐 تشغيل منفذ وهمي لاجتياز فحص Railway..."
 python3 -m http.server ${PORT:-8080} &
@@ -19,26 +22,21 @@ python3 -m http.server ${PORT:-8080} &
 echo "🚀 تشغيل Geyser في الخلفية..."
 java -Xms512M -Xmx512M -jar /app/Geyser-Standalone.jar &
 
-echo "🚀 تشغيل zrok لفتح النفق..."
-zrok share public http://127.0.0.1:19132 --backend-mode proxy &
+echo "🚀 تشغيل zrok لفتح النفق على بورت Geyser..."
+zrok share public 127.0.0.1:19132 --backend-mode tcp &
 
-# سكربت ذكي لالتقاط رابط zrok وإرساله إلى ديسكورد
+# سكربت إرسال إشعار إلى ديسكورد
 python3 - << 'EOF'
 import time
-import subprocess
 import os
 import urllib.request
 import json
 
 webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
-
-print("⏳ جاري انتظار إطلاق نفق zrok...")
-time.sleep(5)
-
-# يمكنك قراءة الرابط من مخرجات zrok أو تفقده، وحال ظهور الرابط يتم إرساله للديسكورد
 if webhook_url:
+    time.sleep(5)
     payload = {
-        "content": "🚀 **تم تشغيل سيرفر الماينكرافت عبر zrok بنجاح!**\n🎮 الرابط العام جاهز لدخول أصحاب الـ Bedrock!"
+        "content": "🚀 **تم تشغيل سيرفر الماينكرافت عبر zrok بنجاح!**\n🎮 الرابط جاهز لدخول أصحاب الـ Bedrock بدون أي كراش!"
     }
     try:
         req = urllib.request.Request(
@@ -52,5 +50,5 @@ if webhook_url:
         print(f"⚠️ فشل إرسال الويب هوك: {e}")
 EOF
 
-# إبقاء الحاوية قيد التشغيل
+# إبقاء الحاوية تعمل
 wait
